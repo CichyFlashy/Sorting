@@ -1,173 +1,224 @@
+// Importowane biblioteki
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.Arrays;
 
-public class Main {
+class Sorting {
 
-    public static List<String> readFile(String filePath) {
-        List<String> lines = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                lines.add(line);
+    /**
+     * Wczytuje dane z pliku tekstowego.
+     *
+     * @param sciezkaPliku Ścieżka do pliku, z którego mają zostać wczytane dane.
+     * @return Lista łańcuchów znaków reprezentujących wiersze w pliku.
+     */
+    private static List<String> wczytajDaneZPliku(String sciezkaPliku) {
+        List<String> linie = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(sciezkaPliku))) {
+            String linia;
+            while ((linia = br.readLine()) != null) {
+                linie.add(linia);
             }
         } catch (IOException e) {
-            System.err.println("Błąd podczas wczytywania pliku: " + e.getMessage());
-            return null;
+            System.err.println("Błąd odczytu pliku: " + e.getMessage());
         }
-        return lines;
+        return linie;
     }
 
-    public static List<?> detectAndSort(List<String> data) {
-        if (data.isEmpty()) return Collections.emptyList();
+    /**
+     * Rozpoznaje typ danych w liście i sortuje je odpowiednią metodą.
+     *
+     * @param dane Lista danych w postaci łańcuchów znaków.
+     * @return Posortowana lista danych. Może to być lista liczb całkowitych, zmiennoprzecinkowych lub tekstów.
+     */
+    private static List<?> rozpoznajITablicaSortujaca(List<String> dane) {
+        if (dane.isEmpty()) return Collections.emptyList();
 
         try {
-            List<Integer> integers = data.stream().map(Integer::parseInt).collect(Collectors.toList());
-            bubbleSort(integers);
-            return integers;
-        } catch (NumberFormatException ignored) { }
+            List<Integer> liczbyCalkowite = dane.stream().map(Integer::parseInt).collect(Collectors.toList());
+            sortowanieBabelkowe(liczbyCalkowite);
+            return liczbyCalkowite;
+        } catch (NumberFormatException e) {
+            System.err.println("Nie można sparsować danych jako Integer: " + e.getMessage());
+        }
 
         try {
-            List<Double> doubles = data.stream().map(Double::parseDouble).collect(Collectors.toList());
-            selectionSort(doubles);
-            return doubles;
-        } catch (NumberFormatException ignored) { }
+            List<Double> liczbyZmiennoprzecinkowe = dane.stream().map(Double::parseDouble).collect(Collectors.toList());
+            sortowaniePrzezWybieranie(liczbyZmiennoprzecinkowe);
+            return liczbyZmiennoprzecinkowe;
+        } catch (NumberFormatException e) {
+            System.err.println("Nie można sparsować danych jako Double: " + e.getMessage());
+        }
 
-        List<String> strings = new ArrayList<>(data);
-        bubbleSort(strings);
-        return strings;
+        List<String> teksty = new ArrayList<>(dane);
+        sortowanieBabelkowe(teksty);
+        return teksty;
     }
 
-    public static <T extends Comparable<T>> void bubbleSort(List<T> list) {
-        int n = list.size();
+    /**
+     * Sortuje listę danych metodą sortowania bąbelkowego.
+     *
+     * @param lista Lista elementów, która implementuje interfejs Comparable.
+     *              Jest to ogólny typ, który umożliwia porównywanie elementów na podstawie ich naturalnej kolejności.
+     *              W przypadku różnych typów danych, jak Integer, Double czy String, lista będzie przyjmować odpowiedni typ.
+     * @param <T>   Typ elementów na liście, który musi implementować interfejs Comparable.
+     */
+    private static <T extends Comparable<T>> void sortowanieBabelkowe(List<T> lista) {
+        int n = lista.size();
         for (int i = 0; i < n - 1; i++) {
             for (int j = 0; j < n - i - 1; j++) {
-                if (list.get(j).compareTo(list.get(j + 1)) > 0) {
-                    Collections.swap(list, j, j + 1);
+                if (lista.get(j).compareTo(lista.get(j + 1)) > 0) {
+                    Collections.swap(lista, j, j + 1);
                 }
             }
         }
     }
 
-    public static <T extends Comparable<T>> void selectionSort(List<T> list) {
-        int n = list.size();
+    /**
+     * Sortuje listę danych metodą sortowania przez wybieranie.
+     *
+     * @param lista Lista elementów, która implementuje interfejs Comparable.
+     * @param <T>   Typ elementów na liście, który musi implementować interfejs Comparable.
+     */
+    private static <T extends Comparable<T>> void sortowaniePrzezWybieranie(List<T> lista) {
+        int n = lista.size();
         for (int i = 0; i < n - 1; i++) {
-            int minIndex = i;
+            int minIndeks = i;
             for (int j = i + 1; j < n; j++) {
-                if (list.get(j).compareTo(list.get(minIndex)) < 0) {
-                    minIndex = j;
+                if (lista.get(j).compareTo(lista.get(minIndeks)) < 0) {
+                    minIndeks = j;
                 }
             }
-            Collections.swap(list, i, minIndex);
+            Collections.swap(lista, i, minIndeks);
         }
     }
 
-    public static List<String> generateData(String type, int size) {
-        Random random = new Random();
-        List<String> data = new ArrayList<>();
+    /**
+     * Generuje dane na podstawie zadanego typu i rozmiaru.
+     *
+     * @param typ   Typ danych, które mają zostać wygenerowane: "Integer", "Double" lub "String".
+     * @param rozmiar Liczba elementów, które mają zostać wygenerowane.
+     * @return Lista danych wygenerowanych na podstawie zadanego typu i rozmiaru.
+     */
+    private static List<String> generujDane(String typ, int rozmiar) {
+        Random losowy = new Random();
+        List<String> dane = new ArrayList<>();
 
-        switch (type) {
+        switch (typ) {
             case "Integer":
-                for (int i = 0; i < size; i++) {
-                    data.add(String.valueOf(random.nextInt(10000)));
+                for (int i = 0; i < rozmiar; i++) {
+                    dane.add(String.valueOf(losowy.nextInt(10000)));
                 }
                 break;
             case "Double":
-                for (int i = 0; i < size; i++) {
-                    data.add(String.valueOf(random.nextDouble() * 10000));
+                for (int i = 0; i < rozmiar; i++) {
+                    dane.add(String.format("%.2f", losowy.nextDouble() * 10000));
                 }
                 break;
             case "String":
-                for (int i = 0; i < size; i++) {
-                    data.add(UUID.randomUUID().toString().substring(0, 8));
+                for (int i = 0; i < rozmiar; i++) {
+                    dane.add(UUID.randomUUID().toString().substring(0, 8));
                 }
                 break;
+            default:
+                throw new IllegalArgumentException("Nieobsługiwany typ danych: " + typ);
         }
 
-        return data;
+        return dane;
     }
 
-    public static void saveToFile(List<?> data, String filePath) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-            for (Object obj : data) {
-                writer.write(obj.toString());
-                writer.newLine();
+    /**
+     * Zapisuje dane do pliku tekstowego.
+     *
+     * @param dane         Lista danych, które mają zostać zapisane do pliku.
+     * @param sciezkaPliku Ścieżka do pliku, do którego dane mają zostać zapisane.
+     */
+    private static void zapiszDoPliku(List<?> dane, String sciezkaPliku) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(sciezkaPliku))) {
+            for (Object element : dane) {
+                bw.write(element.toString());
+                bw.newLine();
             }
         } catch (IOException e) {
-            System.err.println("Błąd podczas zapisu do pliku: " + e.getMessage());
+            System.err.println("Błąd zapisu do pliku: " + e.getMessage());
         }
     }
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("Sortowanie");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 600);
-        frame.setLayout(new BorderLayout());
+        // Tworzenie interfejsu graficznego
+        JFrame ramka = new JFrame("Sortowanie danych");
+        ramka.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        ramka.setSize(800, 600);
+        ramka.setLayout(new BorderLayout());
 
-        JPanel inputPanel = new JPanel(new FlowLayout());
-        JLabel fileLabel = new JLabel("Wprowadź nazwę pliku:");
-        JTextField fileField = new JTextField(20);
-        JButton loadButton = new JButton("Wczytaj");
+        // Panel wejściowy z polami do wczytywania plików i generowania danych
+        JPanel panelWejsciowy = new JPanel(new FlowLayout());
+        JLabel etykietaPlik = new JLabel("Podaj nazwę pliku:");
+        JTextField poleTekstowePlik = new JTextField(20);
+        JButton przyciskWczytaj = new JButton("Wczytaj");
 
-        JLabel generateLabel = new JLabel("Generuj dane:");
-        JComboBox<String> dataTypeBox = new JComboBox<>(new String[]{"Integer", "Double", "String"});
-        JComboBox<Integer> dataSizeBox = new JComboBox<>(new Integer[]{100, 1000, 100000});
-        JButton generateButton = new JButton("Generuj");
+        JLabel etykietaGenerowanie = new JLabel("Generuj dane:");
+        JComboBox<String> typDanychBox = new JComboBox<>(new String[]{"Integer", "Double", "String"});
+        JComboBox<Integer> rozmiarDanychBox = new JComboBox<>(new Integer[]{100, 1000, 100000});
+        JButton przyciskGeneruj = new JButton("Generuj");
 
-        JButton sortButton = new JButton("Sortuj i Zapisz");
-        JTextArea textArea = new JTextArea(20, 60);
-        textArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(textArea);
+        JButton przyciskSortuj = new JButton("Sortuj i Zapisz");
+        JTextArea obszarTekstowy = new JTextArea(20, 60);
+        obszarTekstowy.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(obszarTekstowy);
 
-        inputPanel.add(fileLabel);
-        inputPanel.add(fileField);
-        inputPanel.add(loadButton);
-        inputPanel.add(generateLabel);
-        inputPanel.add(dataTypeBox);
-        inputPanel.add(dataSizeBox);
-        inputPanel.add(generateButton);
+        // Dodanie komponentów do panelu wejściowego
+        panelWejsciowy.add(etykietaPlik);
+        panelWejsciowy.add(poleTekstowePlik);
+        panelWejsciowy.add(przyciskWczytaj);
+        panelWejsciowy.add(etykietaGenerowanie);
+        panelWejsciowy.add(typDanychBox);
+        panelWejsciowy.add(rozmiarDanychBox);
+        panelWejsciowy.add(przyciskGeneruj);
 
-        frame.add(inputPanel, BorderLayout.NORTH);
-        frame.add(scrollPane, BorderLayout.CENTER);
-        frame.add(sortButton, BorderLayout.SOUTH);
+        ramka.add(panelWejsciowy, BorderLayout.NORTH);
+        ramka.add(scrollPane, BorderLayout.CENTER);
+        ramka.add(przyciskSortuj, BorderLayout.SOUTH);
 
-        loadButton.addActionListener(e -> {
-            String filePath = fileField.getText().trim();
-            if (!filePath.isEmpty()) {
-                List<String> data = readFile(filePath);
-                if (data != null) {
-                    textArea.setText(String.join("\n", data));
+        // Akcja dla przycisku Wczytaj
+        przyciskWczytaj.addActionListener(e -> {
+            String sciezkaPliku = poleTekstowePlik.getText().trim();
+            if (!sciezkaPliku.isEmpty()) {
+                List<String> dane = wczytajDaneZPliku(sciezkaPliku);
+                if (dane != null) {
+                    obszarTekstowy.setText(String.join("\n", dane));
                 } else {
-                    JOptionPane.showMessageDialog(frame, "Nie udało się wczytać danych z pliku.", "Błąd", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(ramka, "Nie udało się wczytać danych.", "Błąd", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
 
-        generateButton.addActionListener(e -> {
-            String type = (String) dataTypeBox.getSelectedItem();
-            int size = (int) dataSizeBox.getSelectedItem();
-            List<String> data = generateData(type, size);
-            textArea.setText(String.join("\n", data));
+        // Akcja dla przycisku Generuj
+        przyciskGeneruj.addActionListener(e -> {
+            String typ = (String) typDanychBox.getSelectedItem();
+            int rozmiar = (int) rozmiarDanychBox.getSelectedItem();
+            List<String> dane = generujDane(typ, rozmiar);
+            obszarTekstowy.setText(String.join("\n", dane));
         });
 
-        sortButton.addActionListener(e -> {
-            String content = textArea.getText();
-            if (!content.isEmpty()) {
-                List<String> data = Arrays.asList(content.split("\n"));
-                List<?> sortedData = detectAndSort(data);
-                textArea.setText(sortedData.stream().map(Object::toString).collect(Collectors.joining("\n")));
-                saveToFile(sortedData, "sorted_data.txt");
-                JOptionPane.showMessageDialog(frame, "Dane zostały posortowane i zapisane do pliku sorted_data.txt.", "Sukces", JOptionPane.INFORMATION_MESSAGE);
+        // Akcja dla przycisku Sortuj
+        przyciskSortuj.addActionListener(e -> {
+            String zawartosc = obszarTekstowy.getText();
+            if (!zawartosc.isEmpty()) {
+                List<String> dane = Arrays.asList(zawartosc.split("\n"));
+                List<?> posortowane = rozpoznajITablicaSortujaca(dane);
+                obszarTekstowy.setText(posortowane.stream().map(Object::toString).collect(Collectors.joining("\n")));
+                zapiszDoPliku(posortowane, "posortowane_dane.txt");
+                JOptionPane.showMessageDialog(ramka, "Dane zostały zapisane do pliku posortowane_dane.txt.", "Sukces", JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
-        frame.setVisible(true);
+        ramka.setVisible(true);
     }
 }
